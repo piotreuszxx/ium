@@ -1,40 +1,59 @@
 import os
+from pathlib import Path
 
-import pandas as pd
+import joblib
 from dotenv import load_dotenv
-from sklearn.datasets import load_iris
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report
-from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
-# Zadanie 6 - parametry z pliku .env
-load_dotenv()
+from data_prep import load_data, resolve_path, split_data
 
-test_size = float(os.getenv("TEST_SIZE", "0.2"))
-random_seed = int(os.getenv("RANDOM_SEED", "42"))
+# zadanie 4 - parametry z konfiguracji w pliku .env
+ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(ROOT / ".env")
 
-# Zadanie 3 - wczytanie zbioru Iris, konwersja do DataFrame, podgląd i statystyki
-iris = load_iris()
-df = pd.DataFrame(iris.data, columns=iris.feature_names)
-df["target"] = iris.target
-print(df.head())
-print(df.shape)
-print(df.describe())
+DATA_PATH = os.getenv("DATA_PATH", "data/iris.csv")
+TEST_SIZE = float(os.getenv("TEST_SIZE", "0.2"))
+RANDOM_SEED = int(os.getenv("RANDOM_SEED", "42"))
+MODEL_TYPE = os.getenv("MODEL_TYPE", "logistic_regression")
+MAX_ITER = int(os.getenv("MAX_ITER", "500"))
+C = float(os.getenv("C", "1.0"))
+MODEL_PATH = os.getenv("MODEL_PATH", "models/model.joblib")
 
-# Zadanie 4 - cechy i etykiety, podział 80/20, regresja logistyczna
-X = df[iris.feature_names]
-y = df["target"]
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=test_size, random_state=random_seed
-)
-model = LogisticRegression(max_iter=200)
-model.fit(X_train, y_train)
 
-# Zadanie 5 - ocena na zbiorze testowym; wypisanie wyników oraz zapis do pliku
-y_pred = model.predict(X_test)
-acc = accuracy_score(y_test, y_pred)
-report = classification_report(y_test, y_pred)
-with open("wyniki.txt", "w", encoding="utf-8") as f:
-    f.write(f"accuracy_score: {acc}\n\n{report}")
-print(acc)
-print(report)
+def build_pipeline() -> Pipeline:
+    # zadanie 2 - Pipeline: skalowanie cech + klasyfikator, jak w poprzednim laboratorium.
+    if MODEL_TYPE != "logistic_regression":
+        raise ValueError(f"Nieobsługiwany MODEL_TYPE: {MODEL_TYPE}")
+    return Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            (
+                "clf",
+                LogisticRegression(
+                    max_iter=MAX_ITER,
+                    C=C,
+                    random_state=RANDOM_SEED,
+                ),
+            ),
+        ]
+    )
+
+
+def train() -> Path:
+    df = load_data(DATA_PATH)
+    X_train, _X_test, y_train, _y_test = split_data(df, TEST_SIZE, RANDOM_SEED)
+    model = build_pipeline()
+    model.fit(X_train, y_train)
+
+    out = resolve_path(MODEL_PATH)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    # zapis modelu do models/ - evaluate.py wczyta ten sam plik, ale nie będzie już go trenować, tylko oceniać
+    joblib.dump(model, out)
+    return out
+
+
+if __name__ == "__main__":
+    saved = train()
+    print(f"Zapisano model: {saved}")

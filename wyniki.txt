@@ -1,15 +1,10 @@
-test_size=0.2, random_state=42
+model_type=logistic_regression
+model_path=models/model.joblib
+data_path=data/iris.csv
+test_size=0.2
+random_seed=42
 
-sklearn test accuracy: 0.9333
-pytorch test accuracy: 0.9667
-
-| model    | fold 1   | fold 2   | fold 3   | fold 4   | fold 5   | mean     | std      |
-| sklearn  | 0.9583   | 1.0000   | 0.9167   | 1.0000   | 0.9583   | 0.9667   | 0.0312   |
-| PyTorch  | 0.9583   | 1.0000   | 0.9167   | 0.9583   | 0.8750   | 0.9417   | 0.0425   |
-
-sklearn train time [s]: 0.0091
-pytorch train time [s]: 2.7732
-pytorch cv train time [s]: 0.4269
+accuracy_score: 0.9333
 
 precision    recall  f1-score   support
 
