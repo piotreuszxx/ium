@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    environment:
+      - GREETING=Witaj z compose
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./dane:/data
